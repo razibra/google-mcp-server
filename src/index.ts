@@ -10,6 +10,9 @@ import { DriveService } from "./services/drive.js";
 import { CalendarService } from "./services/calendar.js";
 import { SheetsService } from "./services/sheets.js";
 import { TasksService } from "./services/tasks.js";
+import { GeminiService } from "./services/gemini.js";
+import { VisionService } from "./services/vision.js";
+import { TranslationService } from "./services/translation.js";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -22,12 +25,15 @@ class GoogleMCPServer {
   private calendarService: CalendarService;
   private sheetsService: SheetsService;
   private tasksService: TasksService;
+  private geminiService: GeminiService;
+  private visionService: VisionService;
+  private translationService: TranslationService;
 
   constructor() {
     this.server = new Server(
       {
         name: "google-mcp-server",
-        version: "2.0.0",
+        version: "3.0.0",
       },
       {
         capabilities: {
@@ -42,6 +48,9 @@ class GoogleMCPServer {
     this.calendarService = new CalendarService();
     this.sheetsService = new SheetsService();
     this.tasksService = new TasksService();
+    this.geminiService = new GeminiService();
+    this.visionService = new VisionService();
+    this.translationService = new TranslationService();
 
     this.setupHandlers();
   }
@@ -375,6 +384,153 @@ class GoogleMCPServer {
           description: "Check authentication status",
           inputSchema: { type: "object", properties: {} },
         },
+
+        // ====================================================================
+        // Gemini AI Tools
+        // ====================================================================
+        {
+          name: "gemini_generate",
+          description: "Generate text using Gemini AI",
+          inputSchema: {
+            type: "object",
+            properties: {
+              prompt: { type: "string", description: "Text prompt for generation (required)" },
+              model: { type: "string", description: "Model to use (default: gemini-2.0-flash-exp)" },
+              temperature: { type: "number", description: "Temperature 0-2 (default: 1)" },
+              maxTokens: { type: "number", description: "Maximum tokens to generate" },
+            },
+            required: ["prompt"],
+          },
+        },
+        {
+          name: "gemini_chat",
+          description: "Have a conversation with Gemini AI",
+          inputSchema: {
+            type: "object",
+            properties: {
+              messages: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    role: { type: "string", enum: ["user", "model"] },
+                    content: { type: "string" },
+                  },
+                },
+                description: "Conversation history (required)",
+              },
+              model: { type: "string", description: "Model to use (default: gemini-2.0-flash-exp)" },
+              temperature: { type: "number", description: "Temperature 0-2 (default: 1)" },
+            },
+            required: ["messages"],
+          },
+        },
+        {
+          name: "gemini_vision",
+          description: "Analyze images with Gemini AI vision capabilities",
+          inputSchema: {
+            type: "object",
+            properties: {
+              prompt: { type: "string", description: "Question or instruction about the image (required)" },
+              imageUrl: { type: "string", description: "URL of the image to analyze" },
+              imageData: { type: "string", description: "Base64-encoded image data" },
+              model: { type: "string", description: "Model to use (default: gemini-2.0-flash-exp)" },
+            },
+            required: ["prompt"],
+          },
+        },
+
+        // ====================================================================
+        // Cloud Vision API Tools
+        // ====================================================================
+        {
+          name: "vision_analyze",
+          description: "Analyze an image with Cloud Vision API (comprehensive analysis)",
+          inputSchema: {
+            type: "object",
+            properties: {
+              imageUrl: { type: "string", description: "URL of the image" },
+              imageData: { type: "string", description: "Base64-encoded image data" },
+              features: {
+                type: "array",
+                items: { type: "string" },
+                description: "Features to detect (e.g., TEXT_DETECTION, LABEL_DETECTION, FACE_DETECTION)",
+              },
+            },
+          },
+        },
+        {
+          name: "vision_ocr",
+          description: "Extract text from an image using OCR (Optical Character Recognition)",
+          inputSchema: {
+            type: "object",
+            properties: {
+              imageUrl: { type: "string", description: "URL of the image" },
+              imageData: { type: "string", description: "Base64-encoded image data" },
+              languageHints: {
+                type: "array",
+                items: { type: "string" },
+                description: "Language hints (e.g., ['en', 'he', 'ar'])",
+              },
+            },
+          },
+        },
+        {
+          name: "vision_labels",
+          description: "Detect objects, scenes, and concepts in an image",
+          inputSchema: {
+            type: "object",
+            properties: {
+              imageUrl: { type: "string", description: "URL of the image" },
+              imageData: { type: "string", description: "Base64-encoded image data" },
+              maxResults: { type: "number", description: "Maximum number of labels (default: 10)" },
+            },
+          },
+        },
+
+        // ====================================================================
+        // Cloud Translation API Tools
+        // ====================================================================
+        {
+          name: "translate",
+          description: "Translate text to another language",
+          inputSchema: {
+            type: "object",
+            properties: {
+              text: {
+                type: ["string", "array"],
+                description: "Text to translate (string or array of strings) (required)",
+              },
+              targetLanguage: { type: "string", description: "Target language ISO code (e.g., 'en', 'es', 'he') (required)" },
+              sourceLanguage: { type: "string", description: "Source language (auto-detected if not specified)" },
+            },
+            required: ["text", "targetLanguage"],
+          },
+        },
+        {
+          name: "detect_language",
+          description: "Detect the language of text",
+          inputSchema: {
+            type: "object",
+            properties: {
+              text: {
+                type: ["string", "array"],
+                description: "Text to analyze (string or array of strings) (required)",
+              },
+            },
+            required: ["text"],
+          },
+        },
+        {
+          name: "list_languages",
+          description: "List all supported translation languages",
+          inputSchema: {
+            type: "object",
+            properties: {
+              displayLanguageCode: { type: "string", description: "Language for display names (e.g., 'en', 'he')" },
+            },
+          },
+        },
       ],
     }));
 
@@ -442,6 +598,30 @@ class GoogleMCPServer {
             return await this.tasksService.deleteTask(auth, args as any);
           case "tasks_list_lists":
             return await this.tasksService.listTaskLists(auth);
+
+          // Gemini AI handlers
+          case "gemini_generate":
+            return await this.geminiService.generate(auth, args as any);
+          case "gemini_chat":
+            return await this.geminiService.chat(auth, args as any);
+          case "gemini_vision":
+            return await this.geminiService.vision(auth, args as any);
+
+          // Cloud Vision handlers
+          case "vision_analyze":
+            return await this.visionService.analyze(auth, args as any);
+          case "vision_ocr":
+            return await this.visionService.ocr(auth, args as any);
+          case "vision_labels":
+            return await this.visionService.detectLabels(auth, args as any);
+
+          // Cloud Translation handlers
+          case "translate":
+            return await this.translationService.translate(auth, args as any);
+          case "detect_language":
+            return await this.translationService.detectLanguage(auth, args as any);
+          case "list_languages":
+            return await this.translationService.listLanguages(auth, args as any);
 
           // Auth status
           case "auth_status":

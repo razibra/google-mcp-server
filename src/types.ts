@@ -217,6 +217,73 @@ export interface TaskItem {
 }
 
 // ============================================================================
+// Gemini AI Types
+// ============================================================================
+
+export interface GeminiGenerateParams {
+  prompt: string;
+  model?: string;          // default: "gemini-2.0-flash-exp"
+  temperature?: number;    // 0-2, default: 1
+  maxTokens?: number;
+}
+
+export interface GeminiChatParams {
+  messages: Array<{
+    role: 'user' | 'model';
+    content: string;
+  }>;
+  model?: string;
+  temperature?: number;
+}
+
+export interface GeminiVisionParams {
+  prompt: string;
+  imageUrl?: string;
+  imageData?: string;      // base64 encoded image
+  model?: string;
+}
+
+// ============================================================================
+// Cloud Vision API Types
+// ============================================================================
+
+export interface VisionAnalyzeParams {
+  imageUrl?: string;
+  imageData?: string;      // base64 encoded
+  features?: string[];     // e.g., ["TEXT_DETECTION", "LABEL_DETECTION"]
+}
+
+export interface VisionOCRParams {
+  imageUrl?: string;
+  imageData?: string;
+  languageHints?: string[];
+}
+
+export interface VisionLabelParams {
+  imageUrl?: string;
+  imageData?: string;
+  maxResults?: number;
+}
+
+// ============================================================================
+// Cloud Translation API Types
+// ============================================================================
+
+export interface TranslateTextParams {
+  text: string | string[];
+  targetLanguage: string;  // ISO 639-1 code (e.g., "en", "es", "he")
+  sourceLanguage?: string; // Auto-detect if not specified
+}
+
+export interface DetectLanguageParams {
+  text: string | string[];
+}
+
+export interface ListLanguagesParams {
+  displayLanguageCode?: string;
+}
+
+// ============================================================================
 // Validation Error Types
 // ============================================================================
 

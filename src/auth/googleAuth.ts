@@ -27,13 +27,22 @@ export class GoogleAuthManager {
     
     if (this.scopes.length === 0) {
       this.scopes = [
+        // Gmail
         "https://www.googleapis.com/auth/gmail.send",
         "https://www.googleapis.com/auth/gmail.readonly",
         "https://www.googleapis.com/auth/gmail.modify",
+        // Drive
         "https://www.googleapis.com/auth/drive",
+        // Calendar
         "https://www.googleapis.com/auth/calendar",
+        // Sheets
         "https://www.googleapis.com/auth/spreadsheets",
+        // Tasks
         "https://www.googleapis.com/auth/tasks",
+        // AI Services
+        "https://www.googleapis.com/auth/cloud-vision",
+        "https://www.googleapis.com/auth/cloud-translation",
+        "https://www.googleapis.com/auth/cloud-platform",
       ];
     }
 
