@@ -8,6 +8,8 @@ import { GoogleAuthManager } from "./auth/googleAuth.js";
 import { GmailService } from "./services/gmail.js";
 import { DriveService } from "./services/drive.js";
 import { CalendarService } from "./services/calendar.js";
+import { SheetsService } from "./services/sheets.js";
+import { TasksService } from "./services/tasks.js";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -18,12 +20,14 @@ class GoogleMCPServer {
   private gmailService: GmailService;
   private driveService: DriveService;
   private calendarService: CalendarService;
+  private sheetsService: SheetsService;
+  private tasksService: TasksService;
 
   constructor() {
     this.server = new Server(
       {
         name: "google-mcp-server",
-        version: "1.0.0",
+        version: "2.0.0",
       },
       {
         capabilities: {
@@ -36,6 +40,8 @@ class GoogleMCPServer {
     this.gmailService = new GmailService();
     this.driveService = new DriveService();
     this.calendarService = new CalendarService();
+    this.sheetsService = new SheetsService();
+    this.tasksService = new TasksService();
 
     this.setupHandlers();
   }
@@ -43,66 +49,93 @@ class GoogleMCPServer {
   private setupHandlers() {
     this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
       tools: [
-        // Gmail tools
+        // ====================================================================
+        // Gmail Tools
+        // ====================================================================
         {
           name: "gmail_send",
           description: "Send an email via Gmail",
           inputSchema: {
             type: "object",
             properties: {
-              to: {
-                type: "string",
-                description: "Recipient email address",
-              },
-              subject: {
-                type: "string",
-                description: "Email subject",
-              },
-              body: {
-                type: "string",
-                description: "Email body (plain text or HTML)",
-              },
-              cc: {
-                type: "string",
-                description: "CC recipients (comma-separated)",
-              },
-              bcc: {
-                type: "string",
-                description: "BCC recipients (comma-separated)",
-              },
-              isHtml: {
-                type: "boolean",
-                description: "Whether the body is HTML",
-                default: false,
-              },
+              to: { type: "string", description: "Recipient email address (required)" },
+              subject: { type: "string", description: "Email subject (required)" },
+              body: { type: "string", description: "Email body (required)" },
+              cc: { type: "string", description: "CC recipients (comma-separated)" },
+              bcc: { type: "string", description: "BCC recipients (comma-separated)" },
+              isHtml: { type: "boolean", description: "Whether body is HTML", default: false },
             },
             required: ["to", "subject", "body"],
           },
         },
-        // Drive tools
+        {
+          name: "gmail_list",
+          description: "List emails from Gmail inbox",
+          inputSchema: {
+            type: "object",
+            properties: {
+              maxResults: { type: "number", description: "Maximum number of emails (default: 10)" },
+              query: { type: "string", description: "Gmail search query (e.g., 'is:unread from:example@gmail.com')" },
+              labelIds: { type: "string", description: "Comma-separated label IDs (e.g., 'INBOX,UNREAD')" },
+            },
+          },
+        },
+        {
+          name: "gmail_read",
+          description: "Read a specific email by ID",
+          inputSchema: {
+            type: "object",
+            properties: {
+              messageId: { type: "string", description: "Gmail message ID (required)" },
+              format: { type: "string", enum: ["full", "metadata", "minimal"], description: "Response format (default: full)" },
+            },
+            required: ["messageId"],
+          },
+        },
+        {
+          name: "gmail_search",
+          description: "Search emails using Gmail query syntax",
+          inputSchema: {
+            type: "object",
+            properties: {
+              query: { type: "string", description: "Gmail search query (required)" },
+              maxResults: { type: "number", description: "Maximum results (default: 10)" },
+            },
+            required: ["query"],
+          },
+        },
+        {
+          name: "gmail_modify_labels",
+          description: "Add or remove labels from an email",
+          inputSchema: {
+            type: "object",
+            properties: {
+              messageId: { type: "string", description: "Gmail message ID (required)" },
+              addLabelIds: { type: "string", description: "Comma-separated label IDs to add" },
+              removeLabelIds: { type: "string", description: "Comma-separated label IDs to remove" },
+            },
+            required: ["messageId"],
+          },
+        },
+        {
+          name: "gmail_list_labels",
+          description: "List all available Gmail labels",
+          inputSchema: { type: "object", properties: {} },
+        },
+
+        // ====================================================================
+        // Drive Tools
+        // ====================================================================
         {
           name: "drive_upload",
           description: "Upload a file to Google Drive",
           inputSchema: {
             type: "object",
             properties: {
-              name: {
-                type: "string",
-                description: "Name of the file to create",
-              },
-              content: {
-                type: "string",
-                description: "File content",
-              },
-              mimeType: {
-                type: "string",
-                description: "MIME type of the file (default: text/plain)",
-                default: "text/plain",
-              },
-              folderId: {
-                type: "string",
-                description: "Parent folder ID (optional)",
-              },
+              name: { type: "string", description: "Name of the file (required)" },
+              content: { type: "string", description: "File content (required)" },
+              mimeType: { type: "string", description: "MIME type (default: text/plain)" },
+              folderId: { type: "string", description: "Parent folder ID" },
             },
             required: ["name", "content"],
           },
@@ -113,16 +146,44 @@ class GoogleMCPServer {
           inputSchema: {
             type: "object",
             properties: {
-              query: {
-                type: "string",
-                description: "Search query (optional)",
-              },
-              pageSize: {
-                type: "number",
-                description: "Number of files to return",
-                default: 10,
-              },
+              query: { type: "string", description: "Drive query (e.g., \"name contains 'report'\")" },
+              pageSize: { type: "number", description: "Number of results (default: 10)" },
             },
+          },
+        },
+        {
+          name: "drive_read",
+          description: "Read file content from Google Drive",
+          inputSchema: {
+            type: "object",
+            properties: {
+              fileId: { type: "string", description: "File ID (required)" },
+            },
+            required: ["fileId"],
+          },
+        },
+        {
+          name: "drive_download",
+          description: "Download/export file from Drive (supports Google Workspace files)",
+          inputSchema: {
+            type: "object",
+            properties: {
+              fileId: { type: "string", description: "File ID (required)" },
+              mimeType: { type: "string", description: "Export MIME type for Google Workspace files" },
+            },
+            required: ["fileId"],
+          },
+        },
+        {
+          name: "drive_search",
+          description: "Search files in Google Drive",
+          inputSchema: {
+            type: "object",
+            properties: {
+              query: { type: "string", description: "Search query (required)" },
+              maxResults: { type: "number", description: "Maximum results (default: 10)" },
+            },
+            required: ["query"],
           },
         },
         {
@@ -131,50 +192,28 @@ class GoogleMCPServer {
           inputSchema: {
             type: "object",
             properties: {
-              fileId: {
-                type: "string",
-                description: "ID of the file to delete",
-              },
+              fileId: { type: "string", description: "File ID (required)" },
             },
             required: ["fileId"],
           },
         },
-        // Calendar tools
+
+        // ====================================================================
+        // Calendar Tools
+        // ====================================================================
         {
           name: "calendar_create_event",
           description: "Create a new calendar event",
           inputSchema: {
             type: "object",
             properties: {
-              summary: {
-                type: "string",
-                description: "Event title",
-              },
-              description: {
-                type: "string",
-                description: "Event description",
-              },
-              startTime: {
-                type: "string",
-                description: "Start time (ISO 8601 format, e.g., 2024-03-20T10:00:00Z)",
-              },
-              endTime: {
-                type: "string",
-                description: "End time (ISO 8601 format, e.g., 2024-03-20T11:00:00Z)",
-              },
-              location: {
-                type: "string",
-                description: "Event location",
-              },
-              attendees: {
-                type: "string",
-                description: "Comma-separated email addresses of attendees",
-              },
-              timezone: {
-                type: "string",
-                description: "IANA timezone (e.g., 'America/New_York', 'Europe/London', default: 'UTC')",
-                default: "UTC",
-              },
+              summary: { type: "string", description: "Event title (required)" },
+              startTime: { type: "string", description: "Start time ISO 8601 (required)" },
+              endTime: { type: "string", description: "End time ISO 8601 (required)" },
+              description: { type: "string", description: "Event description" },
+              location: { type: "string", description: "Event location" },
+              attendees: { type: "string", description: "Comma-separated email addresses" },
+              timezone: { type: "string", description: "IANA timezone (default: UTC)" },
             },
             required: ["summary", "startTime", "endTime"],
           },
@@ -185,23 +224,10 @@ class GoogleMCPServer {
           inputSchema: {
             type: "object",
             properties: {
-              maxResults: {
-                type: "number",
-                description: "Maximum number of events to return (default: 10)",
-                default: 10,
-              },
-              timeMin: {
-                type: "string",
-                description: "Start of time range (ISO 8601 format)",
-              },
-              timeMax: {
-                type: "string",
-                description: "End of time range (ISO 8601 format)",
-              },
-              timezone: {
-                type: "string",
-                description: "IANA timezone for results",
-              },
+              maxResults: { type: "number", description: "Maximum results (default: 10)" },
+              timeMin: { type: "string", description: "Start of time range (ISO 8601)" },
+              timeMax: { type: "string", description: "End of time range (ISO 8601)" },
+              timezone: { type: "string", description: "IANA timezone for results" },
             },
           },
         },
@@ -211,50 +237,143 @@ class GoogleMCPServer {
           inputSchema: {
             type: "object",
             properties: {
-              eventId: {
-                type: "string",
-                description: "Event ID to update",
-              },
-              summary: {
-                type: "string",
-                description: "New event title",
-              },
-              description: {
-                type: "string",
-                description: "New event description",
-              },
-              startTime: {
-                type: "string",
-                description: "New start time (ISO 8601 format)",
-              },
-              endTime: {
-                type: "string",
-                description: "New end time (ISO 8601 format)",
-              },
-              location: {
-                type: "string",
-                description: "New event location",
-              },
-              attendees: {
-                type: "string",
-                description: "Comma-separated email addresses of attendees",
-              },
-              timezone: {
-                type: "string",
-                description: "IANA timezone for the event",
-              },
+              eventId: { type: "string", description: "Event ID (required)" },
+              summary: { type: "string", description: "New title" },
+              description: { type: "string", description: "New description" },
+              startTime: { type: "string", description: "New start time (ISO 8601)" },
+              endTime: { type: "string", description: "New end time (ISO 8601)" },
+              location: { type: "string", description: "New location" },
+              attendees: { type: "string", description: "Comma-separated emails" },
+              timezone: { type: "string", description: "IANA timezone" },
             },
             required: ["eventId"],
           },
         },
-        // Auth tool
+
+        // ====================================================================
+        // Sheets Tools
+        // ====================================================================
+        {
+          name: "sheets_create",
+          description: "Create a new Google Spreadsheet",
+          inputSchema: {
+            type: "object",
+            properties: {
+              title: { type: "string", description: "Spreadsheet title (required)" },
+              sheetTitles: { type: "array", items: { type: "string" }, description: "Sheet names" },
+            },
+            required: ["title"],
+          },
+        },
+        {
+          name: "sheets_read",
+          description: "Read data from a Google Sheet",
+          inputSchema: {
+            type: "object",
+            properties: {
+              spreadsheetId: { type: "string", description: "Spreadsheet ID (required)" },
+              range: { type: "string", description: "A1 notation range (e.g., 'Sheet1!A1:D10') (required)" },
+            },
+            required: ["spreadsheetId", "range"],
+          },
+        },
+        {
+          name: "sheets_write",
+          description: "Write data to a Google Sheet",
+          inputSchema: {
+            type: "object",
+            properties: {
+              spreadsheetId: { type: "string", description: "Spreadsheet ID (required)" },
+              range: { type: "string", description: "A1 notation range (required)" },
+              values: { type: "array", items: { type: "array" }, description: "2D array of values (required)" },
+            },
+            required: ["spreadsheetId", "range", "values"],
+          },
+        },
+        {
+          name: "sheets_append",
+          description: "Append data to a Google Sheet",
+          inputSchema: {
+            type: "object",
+            properties: {
+              spreadsheetId: { type: "string", description: "Spreadsheet ID (required)" },
+              range: { type: "string", description: "A1 notation range (required)" },
+              values: { type: "array", items: { type: "array" }, description: "2D array of values (required)" },
+            },
+            required: ["spreadsheetId", "range", "values"],
+          },
+        },
+
+        // ====================================================================
+        // Tasks Tools
+        // ====================================================================
+        {
+          name: "tasks_create",
+          description: "Create a new task in Google Tasks",
+          inputSchema: {
+            type: "object",
+            properties: {
+              title: { type: "string", description: "Task title (required)" },
+              notes: { type: "string", description: "Task notes/description" },
+              due: { type: "string", description: "Due date (ISO 8601)" },
+              taskListId: { type: "string", description: "Task list ID (default: @default)" },
+            },
+            required: ["title"],
+          },
+        },
+        {
+          name: "tasks_list",
+          description: "List tasks from Google Tasks",
+          inputSchema: {
+            type: "object",
+            properties: {
+              taskListId: { type: "string", description: "Task list ID (default: @default)" },
+              maxResults: { type: "number", description: "Maximum results (default: 20)" },
+              showCompleted: { type: "boolean", description: "Show completed tasks" },
+            },
+          },
+        },
+        {
+          name: "tasks_update",
+          description: "Update an existing task",
+          inputSchema: {
+            type: "object",
+            properties: {
+              taskId: { type: "string", description: "Task ID (required)" },
+              taskListId: { type: "string", description: "Task list ID (default: @default)" },
+              title: { type: "string", description: "New title" },
+              notes: { type: "string", description: "New notes" },
+              due: { type: "string", description: "New due date (ISO 8601)" },
+              status: { type: "string", enum: ["needsAction", "completed"], description: "Task status" },
+            },
+            required: ["taskId"],
+          },
+        },
+        {
+          name: "tasks_delete",
+          description: "Delete a task",
+          inputSchema: {
+            type: "object",
+            properties: {
+              taskId: { type: "string", description: "Task ID (required)" },
+              taskListId: { type: "string", description: "Task list ID (default: @default)" },
+            },
+            required: ["taskId"],
+          },
+        },
+        {
+          name: "tasks_list_lists",
+          description: "List all task lists",
+          inputSchema: { type: "object", properties: {} },
+        },
+
+        // ====================================================================
+        // Auth Tool
+        // ====================================================================
         {
           name: "auth_status",
           description: "Check authentication status",
-          inputSchema: {
-            type: "object",
-            properties: {},
-          },
+          inputSchema: { type: "object", properties: {} },
         },
       ],
     }));
@@ -263,19 +382,34 @@ class GoogleMCPServer {
       const { name, arguments: args } = request.params;
 
       try {
-        // Ensure authentication
         const auth = await this.authManager.getAuthClient();
 
         switch (name) {
           // Gmail handlers
           case "gmail_send":
             return await this.gmailService.sendEmail(auth, args as any);
+          case "gmail_list":
+            return await this.gmailService.listEmails(auth, args as any);
+          case "gmail_read":
+            return await this.gmailService.readEmail(auth, args as any);
+          case "gmail_search":
+            return await this.gmailService.searchEmails(auth, args as any);
+          case "gmail_modify_labels":
+            return await this.gmailService.modifyEmailLabels(auth, args as any);
+          case "gmail_list_labels":
+            return await this.gmailService.listLabels(auth);
 
           // Drive handlers
           case "drive_upload":
             return await this.driveService.uploadFile(auth, args as any);
           case "drive_list":
             return await this.driveService.listFiles(auth, args as any);
+          case "drive_read":
+            return await this.driveService.readFile(auth, args as any);
+          case "drive_download":
+            return await this.driveService.downloadFile(auth, args as any);
+          case "drive_search":
+            return await this.driveService.searchFiles(auth, args as any);
           case "drive_delete":
             return await this.driveService.deleteFile(auth, args as any);
 
@@ -287,32 +421,46 @@ class GoogleMCPServer {
           case "calendar_update_event":
             return await this.calendarService.updateEvent(auth, args as any);
 
+          // Sheets handlers
+          case "sheets_create":
+            return await this.sheetsService.createSpreadsheet(auth, args as any);
+          case "sheets_read":
+            return await this.sheetsService.readSheet(auth, args as any);
+          case "sheets_write":
+            return await this.sheetsService.writeSheet(auth, args as any);
+          case "sheets_append":
+            return await this.sheetsService.appendSheet(auth, args as any);
+
+          // Tasks handlers
+          case "tasks_create":
+            return await this.tasksService.createTask(auth, args as any);
+          case "tasks_list":
+            return await this.tasksService.listTasks(auth, args as any);
+          case "tasks_update":
+            return await this.tasksService.updateTask(auth, args as any);
+          case "tasks_delete":
+            return await this.tasksService.deleteTask(auth, args as any);
+          case "tasks_list_lists":
+            return await this.tasksService.listTaskLists(auth);
+
           // Auth status
           case "auth_status":
             return {
-              content: [
-                {
-                  type: "text",
-                  text: `Authentication status: ${
-                    (await this.authManager.isAuthenticated())
-                      ? "Authenticated"
-                      : "Not authenticated"
-                  }`,
-                },
-              ],
+              content: [{
+                type: "text",
+                text: `Authentication status: ${(await this.authManager.isAuthenticated()) ? "Authenticated" : "Not authenticated"}`,
+              }],
             };
 
           default:
             throw new Error(`Unknown tool: ${name}`);
         }
-      } catch (error) {
+      } catch (error: unknown) {
         return {
-          content: [
-            {
-              type: "text",
-              text: `Error: ${error instanceof Error ? error.message : String(error)}`,
-            },
-          ],
+          content: [{
+            type: "text",
+            text: `Error: ${error instanceof Error ? error.message : String(error)}`,
+          }],
           isError: true,
         };
       }

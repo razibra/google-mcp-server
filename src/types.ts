@@ -16,6 +16,40 @@ export interface SendEmailParams {
   isHtml?: boolean;
 }
 
+export interface ListEmailsParams {
+  maxResults?: number;
+  query?: string;      // Gmail search query format
+  labelIds?: string;   // Comma-separated label IDs (e.g., "INBOX,UNREAD")
+}
+
+export interface ReadEmailParams {
+  messageId: string;
+  format?: 'full' | 'metadata' | 'minimal';
+}
+
+export interface SearchEmailsParams {
+  query: string;       // Gmail search query (e.g., "from:user@example.com subject:hello")
+  maxResults?: number;
+}
+
+export interface ModifyEmailLabelsParams {
+  messageId: string;
+  addLabelIds?: string;    // Comma-separated label IDs to add
+  removeLabelIds?: string; // Comma-separated label IDs to remove
+}
+
+export interface GmailMessage {
+  id: string;
+  threadId: string;
+  labelIds?: string[];
+  snippet?: string;
+  subject?: string;
+  from?: string;
+  to?: string;
+  date?: string;
+  body?: string;
+}
+
 // ============================================================================
 // Google Drive Types
 // ============================================================================
@@ -36,6 +70,20 @@ export interface DeleteFileParams {
   fileId: string;
 }
 
+export interface ReadFileParams {
+  fileId: string;
+}
+
+export interface DownloadFileParams {
+  fileId: string;
+  mimeType?: string; // For export (e.g., Google Docs to PDF)
+}
+
+export interface SearchFilesParams {
+  query: string;     // Drive search query
+  maxResults?: number;
+}
+
 export interface DriveFile {
   id: string;
   name: string;
@@ -44,6 +92,7 @@ export interface DriveFile {
   modifiedTime?: string;
   size?: string;
   webViewLink?: string;
+  content?: string;
 }
 
 // ============================================================================
@@ -93,6 +142,78 @@ export interface CalendarEvent {
   location?: string;
   attendees?: Array<{ email: string }>;
   htmlLink?: string;
+}
+
+// ============================================================================
+// Google Sheets Types
+// ============================================================================
+
+export interface CreateSpreadsheetParams {
+  title: string;
+  sheetTitles?: string[]; // Sheet names
+}
+
+export interface ReadSheetParams {
+  spreadsheetId: string;
+  range: string;          // A1 notation (e.g., "Sheet1!A1:D10")
+}
+
+export interface WriteSheetParams {
+  spreadsheetId: string;
+  range: string;          // A1 notation
+  values: string[][];     // 2D array of values
+}
+
+export interface AppendSheetParams {
+  spreadsheetId: string;
+  range: string;          // A1 notation
+  values: string[][];     // 2D array of values
+}
+
+export interface UpdateSheetParams {
+  spreadsheetId: string;
+  range: string;          // A1 notation
+  values: string[][];     // 2D array of values
+}
+
+// ============================================================================
+// Google Tasks Types
+// ============================================================================
+
+export interface CreateTaskParams {
+  title: string;
+  notes?: string;
+  due?: string;           // ISO 8601 format
+  taskListId?: string;    // Default: @default
+}
+
+export interface ListTasksParams {
+  taskListId?: string;    // Default: @default
+  maxResults?: number;
+  showCompleted?: boolean;
+}
+
+export interface UpdateTaskParams {
+  taskId: string;
+  taskListId?: string;    // Default: @default
+  title?: string;
+  notes?: string;
+  due?: string;           // ISO 8601 format
+  status?: 'needsAction' | 'completed';
+}
+
+export interface DeleteTaskParams {
+  taskId: string;
+  taskListId?: string;    // Default: @default
+}
+
+export interface TaskItem {
+  id: string;
+  title: string;
+  notes?: string;
+  status: string;
+  due?: string;
+  completed?: string;
 }
 
 // ============================================================================
