@@ -317,6 +317,141 @@ export interface VeoGenerateParams {
 }
 
 // ============================================================================
+// Apps Script API Types
+// ============================================================================
+
+export interface AppsScriptCreateProjectParams {
+  title: string;               // Project title
+  parentId?: string;           // Parent folder ID in Drive
+}
+
+export interface AppsScriptUpdateContentParams {
+  scriptId: string;            // Script project ID
+  files: Array<{
+    name: string;              // File name (e.g., "Code.gs")
+    type: string;              // "SERVER_JS" or "HTML"
+    source: string;            // File content
+  }>;
+}
+
+export interface AppsScriptRunFunctionParams {
+  scriptId: string;            // Script project ID
+  functionName: string;        // Function to execute
+  parameters?: any[];          // Function parameters
+  devMode?: boolean;           // Run in dev mode
+}
+
+export interface AppsScriptGetDeploymentsParams {
+  scriptId: string;            // Script project ID
+}
+
+// ============================================================================
+// YouTube Data API Types
+// ============================================================================
+
+export interface YouTubeSearchParams {
+  query: string;               // Search query
+  maxResults?: number;         // Max results (default: 10)
+  type?: string;               // "video", "channel", "playlist"
+  order?: string;              // "date", "rating", "relevance", "title", "viewCount"
+}
+
+export interface YouTubeListVideosParams {
+  channelId?: string;          // Channel ID
+  videoIds?: string[];         // Specific video IDs
+  maxResults?: number;         // Max results (default: 10)
+}
+
+export interface YouTubeGetVideoDetailsParams {
+  videoId: string;             // Video ID
+}
+
+export interface YouTubeCreatePlaylistParams {
+  title: string;               // Playlist title
+  description?: string;        // Playlist description
+  privacyStatus?: string;      // "public", "private", "unlisted"
+}
+
+export interface YouTubeAddToPlaylistParams {
+  playlistId: string;          // Playlist ID
+  videoId: string;             // Video ID to add
+  position?: number;           // Position in playlist
+}
+
+// ============================================================================
+// Cloud Storage (GCS) API Types
+// ============================================================================
+
+export interface StorageCreateBucketParams {
+  bucketName: string;          // Bucket name (globally unique)
+  location?: string;           // Location (default: "US")
+  storageClass?: string;       // "STANDARD", "NEARLINE", "COLDLINE", "ARCHIVE"
+}
+
+export interface StorageUploadFileParams {
+  bucketName: string;          // Bucket name
+  fileName: string;            // File name/path in bucket
+  content: string;             // File content (base64 or text)
+  contentType?: string;        // MIME type
+  metadata?: Record<string, string>; // Custom metadata
+}
+
+export interface StorageDownloadFileParams {
+  bucketName: string;          // Bucket name
+  fileName: string;            // File name/path
+}
+
+export interface StorageListFilesParams {
+  bucketName: string;          // Bucket name
+  prefix?: string;             // Filter by prefix
+  maxResults?: number;         // Max results (default: 100)
+}
+
+export interface StorageDeleteFileParams {
+  bucketName: string;          // Bucket name
+  fileName: string;            // File name/path
+}
+
+// ============================================================================
+// BigQuery API Types
+// ============================================================================
+
+export interface BigQueryQueryParams {
+  query: string;               // SQL query
+  datasetId?: string;          // Default dataset ID
+  maxResults?: number;         // Max results (default: 100)
+  useLegacySql?: boolean;      // Use legacy SQL (default: false)
+}
+
+export interface BigQueryCreateDatasetParams {
+  datasetId: string;           // Dataset ID
+  description?: string;        // Dataset description
+  location?: string;           // Location (default: "US")
+}
+
+export interface BigQueryCreateTableParams {
+  datasetId: string;           // Dataset ID
+  tableId: string;             // Table ID
+  schema: Array<{
+    name: string;              // Field name
+    type: string;              // Field type (STRING, INTEGER, FLOAT, etc.)
+    mode?: string;             // "REQUIRED", "NULLABLE", "REPEATED"
+  }>;
+  description?: string;        // Table description
+}
+
+export interface BigQueryInsertDataParams {
+  datasetId: string;           // Dataset ID
+  tableId: string;             // Table ID
+  rows: Array<Record<string, any>>; // Rows to insert
+}
+
+export interface BigQueryListTablesParams {
+  datasetId: string;           // Dataset ID
+  maxResults?: number;         // Max results (default: 50)
+}
+
+// ============================================================================
 // Validation Error Types
 // ============================================================================
 

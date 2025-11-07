@@ -39,7 +39,12 @@ export class GoogleAuthManager {
         "https://www.googleapis.com/auth/spreadsheets",
         // Tasks
         "https://www.googleapis.com/auth/tasks",
-        // AI Services
+        // Apps Script
+        "https://www.googleapis.com/auth/script.projects",
+        // YouTube
+        "https://www.googleapis.com/auth/youtube",
+        "https://www.googleapis.com/auth/youtube.readonly",
+        // AI Services & Cloud Platform (includes BigQuery & Cloud Storage)
         "https://www.googleapis.com/auth/cloud-vision",
         "https://www.googleapis.com/auth/cloud-translation",
         "https://www.googleapis.com/auth/cloud-platform",
