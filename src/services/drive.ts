@@ -1,13 +1,27 @@
 import { google, drive_v3 } from "googleapis";
 import { OAuth2Client } from "google-auth-library";
 import { Readable } from "stream";
+import { UploadFileParams, ListFilesParams, DeleteFileParams, GoogleAPIError } from "../types.js";
+import { validateRequired, validateMimeType, validateId } from "../utils/validation.js";
 
 export class DriveService {
-  async uploadFile(auth: OAuth2Client, params: any) {
+  async uploadFile(auth: OAuth2Client, params: UploadFileParams) {
+    // Validate required fields
+    validateRequired(params.name, 'name');
+    validateRequired(params.content, 'content');
+
+    // Validate optional fields
+    if (params.mimeType) {
+      validateMimeType(params.mimeType);
+    }
+    if (params.folderId) {
+      validateId(params.folderId, 'folderId');
+    }
+
     const drive = google.drive({ version: "v3", auth });
 
     const fileMetadata: drive_v3.Schema$File = {
-      name: params.fileName,
+      name: params.name,
     };
 
     if (params.folderId) {
@@ -35,12 +49,15 @@ export class DriveService {
           },
         ],
       };
-    } catch (error) {
-      throw new Error(`Failed to upload file: ${error}`);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        throw new GoogleAPIError(`Failed to upload file: ${error.message}`, undefined, error);
+      }
+      throw new GoogleAPIError(`Failed to upload file: ${String(error)}`);
     }
   }
 
-  async listFiles(auth: OAuth2Client, params: any) {
+  async listFiles(auth: OAuth2Client, params: ListFilesParams = {}) {
     const drive = google.drive({ version: "v3", auth });
 
     try {
@@ -51,7 +68,7 @@ export class DriveService {
       });
 
       const files = result.data.files || [];
-      
+
       if (files.length === 0) {
         return {
           content: [
@@ -75,12 +92,18 @@ export class DriveService {
           },
         ],
       };
-    } catch (error) {
-      throw new Error(`Failed to list files: ${error}`);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        throw new GoogleAPIError(`Failed to list files: ${error.message}`, undefined, error);
+      }
+      throw new GoogleAPIError(`Failed to list files: ${String(error)}`);
     }
   }
 
-  async deleteFile(auth: OAuth2Client, params: any) {
+  async deleteFile(auth: OAuth2Client, params: DeleteFileParams) {
+    // Validate required fields
+    validateId(params.fileId, 'fileId');
+
     const drive = google.drive({ version: "v3", auth });
 
     try {
@@ -96,8 +119,11 @@ export class DriveService {
           },
         ],
       };
-    } catch (error) {
-      throw new Error(`Failed to delete file: ${error}`);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        throw new GoogleAPIError(`Failed to delete file: ${error.message}`, undefined, error);
+      }
+      throw new GoogleAPIError(`Failed to delete file: ${String(error)}`);
     }
   }
 }

@@ -86,7 +86,7 @@ class GoogleMCPServer {
           inputSchema: {
             type: "object",
             properties: {
-              fileName: {
+              name: {
                 type: "string",
                 description: "Name of the file to create",
               },
@@ -96,7 +96,7 @@ class GoogleMCPServer {
               },
               mimeType: {
                 type: "string",
-                description: "MIME type of the file",
+                description: "MIME type of the file (default: text/plain)",
                 default: "text/plain",
               },
               folderId: {
@@ -104,7 +104,7 @@ class GoogleMCPServer {
                 description: "Parent folder ID (optional)",
               },
             },
-            required: ["fileName", "content"],
+            required: ["name", "content"],
           },
         },
         {
@@ -156,27 +156,24 @@ class GoogleMCPServer {
               },
               startTime: {
                 type: "string",
-                description: "Start time (ISO 8601 format)",
+                description: "Start time (ISO 8601 format, e.g., 2024-03-20T10:00:00Z)",
               },
               endTime: {
                 type: "string",
-                description: "End time (ISO 8601 format)",
-              },
-              attendees: {
-                type: "array",
-                items: {
-                  type: "string",
-                },
-                description: "List of attendee email addresses",
+                description: "End time (ISO 8601 format, e.g., 2024-03-20T11:00:00Z)",
               },
               location: {
                 type: "string",
                 description: "Event location",
               },
-              calendarId: {
+              attendees: {
                 type: "string",
-                description: "Calendar ID (default: primary)",
-                default: "primary",
+                description: "Comma-separated email addresses of attendees",
+              },
+              timezone: {
+                type: "string",
+                description: "IANA timezone (e.g., 'America/New_York', 'Europe/London', default: 'UTC')",
+                default: "UTC",
               },
             },
             required: ["summary", "startTime", "endTime"],
@@ -188,23 +185,22 @@ class GoogleMCPServer {
           inputSchema: {
             type: "object",
             properties: {
-              calendarId: {
-                type: "string",
-                description: "Calendar ID (default: primary)",
-                default: "primary",
-              },
               maxResults: {
                 type: "number",
-                description: "Maximum number of events to return",
+                description: "Maximum number of events to return (default: 10)",
                 default: 10,
               },
               timeMin: {
                 type: "string",
-                description: "Start of time range (ISO 8601)",
+                description: "Start of time range (ISO 8601 format)",
               },
               timeMax: {
                 type: "string",
-                description: "End of time range (ISO 8601)",
+                description: "End of time range (ISO 8601 format)",
+              },
+              timezone: {
+                type: "string",
+                description: "IANA timezone for results",
               },
             },
           },
@@ -219,11 +215,6 @@ class GoogleMCPServer {
                 type: "string",
                 description: "Event ID to update",
               },
-              calendarId: {
-                type: "string",
-                description: "Calendar ID (default: primary)",
-                default: "primary",
-              },
               summary: {
                 type: "string",
                 description: "New event title",
@@ -234,15 +225,23 @@ class GoogleMCPServer {
               },
               startTime: {
                 type: "string",
-                description: "New start time (ISO 8601)",
+                description: "New start time (ISO 8601 format)",
               },
               endTime: {
                 type: "string",
-                description: "New end time (ISO 8601)",
+                description: "New end time (ISO 8601 format)",
               },
               location: {
                 type: "string",
                 description: "New event location",
+              },
+              attendees: {
+                type: "string",
+                description: "Comma-separated email addresses of attendees",
+              },
+              timezone: {
+                type: "string",
+                description: "IANA timezone for the event",
               },
             },
             required: ["eventId"],
@@ -270,23 +269,23 @@ class GoogleMCPServer {
         switch (name) {
           // Gmail handlers
           case "gmail_send":
-            return await this.gmailService.sendEmail(auth, args);
+            return await this.gmailService.sendEmail(auth, args as any);
 
           // Drive handlers
           case "drive_upload":
-            return await this.driveService.uploadFile(auth, args);
+            return await this.driveService.uploadFile(auth, args as any);
           case "drive_list":
-            return await this.driveService.listFiles(auth, args);
+            return await this.driveService.listFiles(auth, args as any);
           case "drive_delete":
-            return await this.driveService.deleteFile(auth, args);
+            return await this.driveService.deleteFile(auth, args as any);
 
           // Calendar handlers
           case "calendar_create_event":
-            return await this.calendarService.createEvent(auth, args);
+            return await this.calendarService.createEvent(auth, args as any);
           case "calendar_list_events":
-            return await this.calendarService.listEvents(auth, args);
+            return await this.calendarService.listEvents(auth, args as any);
           case "calendar_update_event":
-            return await this.calendarService.updateEvent(auth, args);
+            return await this.calendarService.updateEvent(auth, args as any);
 
           // Auth status
           case "auth_status":

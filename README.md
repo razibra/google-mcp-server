@@ -6,7 +6,7 @@ A Model Context Protocol (MCP) server that provides full integration with Google
 
 - **Gmail Integration**
   - Send emails with support for CC, BCC, and HTML content
-  - Full Hebrew/RTL language support with automatic formatting
+  - UTF-8 character encoding support for international languages
   
 - **Google Drive Integration**
   - Upload files to Drive
@@ -56,13 +56,8 @@ A Model Context Protocol (MCP) server that provides full integration with Google
    npm install
    ```
 
-2. **Configure environment**
-   - Copy `.env.example` to `.env`
-   - Fill in your Google OAuth2 credentials from the downloaded JSON file:
-     ```
-     GOOGLE_CLIENT_ID=your_client_id
-     GOOGLE_CLIENT_SECRET=your_client_secret
-     ```
+2. **Place credentials file**
+   - Ensure the downloaded `credentials.json` file is in the project root directory
 
 3. **Build the project**
    ```bash
@@ -87,15 +82,13 @@ Add this server to your MCP client configuration (e.g., Claude Desktop):
   "mcpServers": {
     "google": {
       "command": "node",
-      "args": ["/path/to/google-mcp-integration/dist/index.js"],
-      "env": {
-        "GOOGLE_CLIENT_ID": "your_client_id",
-        "GOOGLE_CLIENT_SECRET": "your_client_secret"
-      }
+      "args": ["/path/to/google-mcp-server/dist/index.js"]
     }
   }
 }
 ```
+
+Make sure that `credentials.json` is in the project root directory before starting the server.
 
 ### Available Tools
 
@@ -104,38 +97,38 @@ Add this server to your MCP client configuration (e.g., Claude Desktop):
 - **gmail_send**: Send an email
   ```
   Parameters:
-  - to: Recipient email address
-  - subject: Email subject
-  - body: Email body
-  - cc: (optional) CC recipients
-  - bcc: (optional) BCC recipients
-  - isHtml: (optional) Whether body is HTML
+  - to: Recipient email address (required)
+  - subject: Email subject (required)
+  - body: Email body (required)
+  - cc: (optional) CC recipients (comma-separated)
+  - bcc: (optional) BCC recipients (comma-separated)
+  - isHtml: (optional) Whether body is HTML (default: false)
   ```
 
-  **Hebrew/RTL Support**: The server automatically detects Hebrew content and applies proper RTL formatting. When sending Hebrew emails, the content is wrapped with `dir="rtl"` and right-aligned styling for proper display.
+  All emails use UTF-8 character encoding and support international characters.
 
 #### Drive Tools
 
 - **drive_upload**: Upload a file to Google Drive
   ```
   Parameters:
-  - fileName: Name of the file
-  - content: File content
-  - mimeType: (optional) MIME type
+  - name: Name of the file (required)
+  - content: File content (required)
+  - mimeType: (optional) MIME type (default: "text/plain")
   - folderId: (optional) Parent folder ID
   ```
 
 - **drive_list**: List files in Drive
   ```
   Parameters:
-  - query: (optional) Search query
-  - pageSize: (optional) Number of results
+  - query: (optional) Search query (Google Drive query format)
+  - pageSize: (optional) Number of results (default: 10)
   ```
 
 - **drive_delete**: Delete a file
   ```
   Parameters:
-  - fileId: ID of file to delete
+  - fileId: ID of file to delete (required)
   ```
 
 #### Calendar Tools
@@ -143,34 +136,35 @@ Add this server to your MCP client configuration (e.g., Claude Desktop):
 - **calendar_create_event**: Create a calendar event
   ```
   Parameters:
-  - summary: Event title
-  - description: Event description
-  - startTime: Start time (ISO 8601)
-  - endTime: End time (ISO 8601)
-  - attendees: (optional) List of email addresses
+  - summary: Event title (required)
+  - startTime: Start time in ISO 8601 format (required)
+  - endTime: End time in ISO 8601 format (required)
+  - description: (optional) Event description
   - location: (optional) Event location
-  - calendarId: (optional) Calendar ID (default: primary)
+  - attendees: (optional) Comma-separated email addresses
+  - timezone: (optional) IANA timezone (e.g., "America/New_York", default: "UTC")
   ```
 
 - **calendar_list_events**: List calendar events
   ```
   Parameters:
-  - calendarId: (optional) Calendar ID
-  - maxResults: (optional) Maximum results
-  - timeMin: (optional) Start of time range
-  - timeMax: (optional) End of time range
+  - maxResults: (optional) Maximum number of results (default: 10)
+  - timeMin: (optional) Start of time range in ISO 8601 format
+  - timeMax: (optional) End of time range in ISO 8601 format
+  - timezone: (optional) IANA timezone for results
   ```
 
 - **calendar_update_event**: Update an event
   ```
   Parameters:
-  - eventId: Event ID to update
-  - calendarId: (optional) Calendar ID
+  - eventId: Event ID to update (required)
   - summary: (optional) New title
   - description: (optional) New description
-  - startTime: (optional) New start time
-  - endTime: (optional) New end time
+  - startTime: (optional) New start time in ISO 8601 format
+  - endTime: (optional) New end time in ISO 8601 format
   - location: (optional) New location
+  - attendees: (optional) Comma-separated email addresses
+  - timezone: (optional) IANA timezone for the event
   ```
 
 #### Authentication Tool
@@ -203,14 +197,21 @@ npm start
    - Delete `tokens.json` and re-authenticate
    - Ensure your Google Cloud project has the required APIs enabled
    - Check that your OAuth consent screen is properly configured
+   - Verify that `credentials.json` exists in the project root
 
 2. **Permission Errors**
-   - Verify the OAuth scopes in your `.env` file
+   - Verify the OAuth scopes in your Google Cloud Console
    - Ensure your Google account has access to the resources you're trying to access
+   - Check that your account is added as a test user in the OAuth consent screen
 
 3. **API Quota Limits**
    - Google APIs have usage quotas
    - Check your quota usage in the Google Cloud Console
+
+4. **Validation Errors**
+   - Ensure email addresses are in valid format
+   - ISO 8601 date format: `YYYY-MM-DDTHH:mm:ss.sssZ` or `YYYY-MM-DDTHH:mm:ss+00:00`
+   - IANA timezone format: `America/New_York`, `Europe/London`, `UTC`, etc.
 
 ## License
 

@@ -1,8 +1,23 @@
 import { google, gmail_v1 } from "googleapis";
 import { OAuth2Client } from "google-auth-library";
+import { SendEmailParams, GoogleAPIError } from "../types.js";
+import { validateEmail, validateEmails, validateRequired } from "../utils/validation.js";
 
 export class GmailService {
-  async sendEmail(auth: OAuth2Client, params: any) {
+  async sendEmail(auth: OAuth2Client, params: SendEmailParams) {
+    // Validate required fields
+    validateRequired(params.to, 'to');
+    validateRequired(params.subject, 'subject');
+    validateRequired(params.body, 'body');
+
+    // Validate email addresses
+    validateEmail(params.to);
+    if (params.cc) {
+      validateEmails(params.cc);
+    }
+    if (params.bcc) {
+      validateEmails(params.bcc);
+    }
     const gmail = google.gmail({ version: "v1", auth });
 
     // Construct email
@@ -31,12 +46,15 @@ export class GmailService {
           },
         ],
       };
-    } catch (error) {
-      throw new Error(`Failed to send email: ${error}`);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        throw new GoogleAPIError(`Failed to send email: ${error.message}`, undefined, error);
+      }
+      throw new GoogleAPIError(`Failed to send email: ${String(error)}`);
     }
   }
 
-  private constructEmail(params: any): string {
+  private constructEmail(params: SendEmailParams): string {
     const lines = [];
     
     // Headers
