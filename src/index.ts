@@ -13,6 +13,8 @@ import { TasksService } from "./services/tasks.js";
 import { GeminiService } from "./services/gemini.js";
 import { VisionService } from "./services/vision.js";
 import { TranslationService } from "./services/translation.js";
+import { ImagenService } from "./services/imagen.js";
+import { VeoService } from "./services/veo.js";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -28,12 +30,14 @@ class GoogleMCPServer {
   private geminiService: GeminiService;
   private visionService: VisionService;
   private translationService: TranslationService;
+  private imagenService: ImagenService;
+  private veoService: VeoService;
 
   constructor() {
     this.server = new Server(
       {
         name: "google-mcp-server",
-        version: "3.0.0",
+        version: "4.0.0",
       },
       {
         capabilities: {
@@ -51,6 +55,8 @@ class GoogleMCPServer {
     this.geminiService = new GeminiService();
     this.visionService = new VisionService();
     this.translationService = new TranslationService();
+    this.imagenService = new ImagenService();
+    this.veoService = new VeoService();
 
     this.setupHandlers();
   }
@@ -390,12 +396,12 @@ class GoogleMCPServer {
         // ====================================================================
         {
           name: "gemini_generate",
-          description: "Generate text using Gemini AI",
+          description: "Generate text using Gemini 2.5 AI (Google's most advanced model)",
           inputSchema: {
             type: "object",
             properties: {
               prompt: { type: "string", description: "Text prompt for generation (required)" },
-              model: { type: "string", description: "Model to use (default: gemini-2.0-flash-exp)" },
+              model: { type: "string", description: "Model to use (default: gemini-2.5-pro-latest, options: gemini-2.5-flash-latest, gemini-2.0-flash-exp)" },
               temperature: { type: "number", description: "Temperature 0-2 (default: 1)" },
               maxTokens: { type: "number", description: "Maximum tokens to generate" },
             },
@@ -404,7 +410,7 @@ class GoogleMCPServer {
         },
         {
           name: "gemini_chat",
-          description: "Have a conversation with Gemini AI",
+          description: "Have a conversation with Gemini 2.5 AI",
           inputSchema: {
             type: "object",
             properties: {
@@ -419,7 +425,7 @@ class GoogleMCPServer {
                 },
                 description: "Conversation history (required)",
               },
-              model: { type: "string", description: "Model to use (default: gemini-2.0-flash-exp)" },
+              model: { type: "string", description: "Model to use (default: gemini-2.5-pro-latest)" },
               temperature: { type: "number", description: "Temperature 0-2 (default: 1)" },
             },
             required: ["messages"],
@@ -427,14 +433,14 @@ class GoogleMCPServer {
         },
         {
           name: "gemini_vision",
-          description: "Analyze images with Gemini AI vision capabilities",
+          description: "Analyze images with Gemini 2.5 vision capabilities",
           inputSchema: {
             type: "object",
             properties: {
               prompt: { type: "string", description: "Question or instruction about the image (required)" },
               imageUrl: { type: "string", description: "URL of the image to analyze" },
               imageData: { type: "string", description: "Base64-encoded image data" },
-              model: { type: "string", description: "Model to use (default: gemini-2.0-flash-exp)" },
+              model: { type: "string", description: "Model to use (default: gemini-2.5-pro-latest)" },
             },
             required: ["prompt"],
           },
@@ -531,6 +537,85 @@ class GoogleMCPServer {
             },
           },
         },
+
+        // ====================================================================
+        // Imagen 3 Tools (Image Generation)
+        // ====================================================================
+        {
+          name: "imagen_generate",
+          description: "Generate images from text using Imagen 3 (Google's advanced text-to-image AI)",
+          inputSchema: {
+            type: "object",
+            properties: {
+              prompt: { type: "string", description: "Description of the image to generate (required)" },
+              negativePrompt: { type: "string", description: "What to avoid in the image" },
+              aspectRatio: {
+                type: "string",
+                enum: ["1:1", "9:16", "16:9", "4:3", "3:4"],
+                description: "Aspect ratio (default: 1:1)"
+              },
+              numberOfImages: { type: "number", description: "Number of images to generate (1-4, default: 1)" },
+              model: {
+                type: "string",
+                enum: ["imagen-3.0-generate-001", "imagen-3.0-fast-generate-001"],
+                description: "Model to use (default: imagen-3.0-generate-001)"
+              },
+              safetyFilterLevel: {
+                type: "string",
+                enum: ["block_most", "block_some", "block_few"],
+                description: "Safety filter level (default: block_some)"
+              },
+              personGeneration: {
+                type: "string",
+                enum: ["allow_adult", "allow_all", "dont_allow"],
+                description: "Person generation policy (default: dont_allow)"
+              },
+            },
+            required: ["prompt"],
+          },
+        },
+        {
+          name: "imagen_edit",
+          description: "Edit images using Imagen 3 (inpainting/outpainting)",
+          inputSchema: {
+            type: "object",
+            properties: {
+              prompt: { type: "string", description: "Description of how to edit the image (required)" },
+              baseImage: { type: "string", description: "Base64-encoded image to edit (required)" },
+              mask: { type: "string", description: "Base64-encoded mask for inpainting (optional)" },
+              negativePrompt: { type: "string", description: "What to avoid in the edited image" },
+              numberOfImages: { type: "number", description: "Number of edited versions (1-4, default: 1)" },
+            },
+            required: ["prompt", "baseImage"],
+          },
+        },
+
+        // ====================================================================
+        // Veo 3 Tools (Video Generation)
+        // ====================================================================
+        {
+          name: "veo_generate",
+          description: "Generate videos from text using Veo 3 (Google's video generation AI) - Note: May require special access",
+          inputSchema: {
+            type: "object",
+            properties: {
+              prompt: { type: "string", description: "Description of the video to generate (required)" },
+              duration: { type: "number", description: "Duration in seconds (1-30, default: 5)" },
+              aspectRatio: {
+                type: "string",
+                enum: ["16:9", "9:16", "1:1"],
+                description: "Aspect ratio (default: 16:9)"
+              },
+              model: { type: "string", description: "Model version (default: veo-3.0)" },
+            },
+            required: ["prompt"],
+          },
+        },
+        {
+          name: "veo_check_availability",
+          description: "Check if Veo 3 API is available and accessible",
+          inputSchema: { type: "object", properties: {} },
+        },
       ],
     }));
 
@@ -622,6 +707,18 @@ class GoogleMCPServer {
             return await this.translationService.detectLanguage(auth, args as any);
           case "list_languages":
             return await this.translationService.listLanguages(auth, args as any);
+
+          // Imagen handlers
+          case "imagen_generate":
+            return await this.imagenService.generate(auth, args as any);
+          case "imagen_edit":
+            return await this.imagenService.edit(auth, args as any);
+
+          // Veo handlers
+          case "veo_generate":
+            return await this.veoService.generate(auth, args as any);
+          case "veo_check_availability":
+            return await this.veoService.checkAvailability(auth);
 
           // Auth status
           case "auth_status":

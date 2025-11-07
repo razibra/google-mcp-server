@@ -29,7 +29,7 @@ export class GeminiService {
     try {
       const genAI = await this.getGenAI(auth);
       const model = genAI.getGenerativeModel({
-        model: params.model || "gemini-2.0-flash-exp",
+        model: params.model || "gemini-2.5-pro-latest",
         generationConfig: {
           temperature: params.temperature ?? 1,
           maxOutputTokens: params.maxTokens,
@@ -62,7 +62,7 @@ export class GeminiService {
     try {
       const genAI = await this.getGenAI(auth);
       const model = genAI.getGenerativeModel({
-        model: params.model || "gemini-2.0-flash-exp",
+        model: params.model || "gemini-2.5-pro-latest",
         generationConfig: {
           temperature: params.temperature ?? 1,
         }
@@ -110,7 +110,7 @@ export class GeminiService {
     try {
       const genAI = await this.getGenAI(auth);
       const model = genAI.getGenerativeModel({
-        model: params.model || "gemini-2.0-flash-exp",
+        model: params.model || "gemini-2.5-pro-latest",
       });
 
       let imagePart;

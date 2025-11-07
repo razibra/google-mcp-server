@@ -284,6 +284,39 @@ export interface ListLanguagesParams {
 }
 
 // ============================================================================
+// Imagen 3 API Types (Image Generation)
+// ============================================================================
+
+export interface ImagenGenerateParams {
+  prompt: string;              // Description of the image to generate
+  negativePrompt?: string;     // What to avoid in the image
+  aspectRatio?: string;        // "1:1", "9:16", "16:9", "4:3", "3:4" (default: "1:1")
+  numberOfImages?: number;     // 1-4 images (default: 1)
+  model?: string;              // "imagen-3.0-generate-001" or "imagen-3.0-fast-generate-001"
+  safetyFilterLevel?: string;  // "block_most", "block_some", "block_few" (default: "block_some")
+  personGeneration?: string;   // "allow_adult", "allow_all", "dont_allow" (default: "dont_allow")
+}
+
+export interface ImagenEditParams {
+  prompt: string;
+  baseImage: string;           // base64 encoded image to edit
+  mask?: string;               // base64 encoded mask (optional)
+  negativePrompt?: string;
+  numberOfImages?: number;
+}
+
+// ============================================================================
+// Veo API Types (Video Generation)
+// ============================================================================
+
+export interface VeoGenerateParams {
+  prompt: string;              // Description of the video to generate
+  duration?: number;           // Duration in seconds (default: 5)
+  aspectRatio?: string;        // "16:9", "9:16", "1:1"
+  model?: string;              // "veo-3.0" or specific model version
+}
+
+// ============================================================================
 // Validation Error Types
 // ============================================================================
 
