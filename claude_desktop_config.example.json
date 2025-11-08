@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "google": {
+      "command": "node",
+      "args": ["/absolute/path/to/google-mcp-server/dist/index.js"],
+      "env": {
+        "GOOGLE_AI_API_KEY": "your-gemini-api-key-here",
+        "GOOGLE_CLOUD_PROJECT": "your-project-id-here"
+      }
+    }
+  }
+}
