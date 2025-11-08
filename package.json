@@ -1,7 +1,7 @@
 {
   "name": "google-mcp-server",
-  "version": "1.0.0",
-  "description": "MCP server for Google services integration (Gmail, Drive, Calendar)",
+  "version": "5.0.0",
+  "description": "Comprehensive MCP server for Google Cloud Platform and Workspace - 13 services with 61 tools including Gmail, Drive, Calendar, Sheets, Tasks, Gemini 2.5 AI, Vision, Translation, Imagen 3, Veo 3, Apps Script, YouTube, Cloud Storage, and BigQuery",
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
@@ -12,9 +12,23 @@
   "keywords": [
     "mcp",
     "google",
+    "google-cloud",
+    "workspace",
     "gmail",
     "drive",
-    "calendar"
+    "calendar",
+    "sheets",
+    "tasks",
+    "gemini",
+    "ai",
+    "imagen",
+    "veo",
+    "apps-script",
+    "youtube",
+    "cloud-storage",
+    "bigquery",
+    "vision-api",
+    "translation"
   ],
   "author": "",
   "license": "MIT",
