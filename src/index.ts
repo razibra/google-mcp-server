@@ -139,6 +139,20 @@ class GoogleMCPServer {
             required: ["fileId"],
           },
         },
+        {
+          name: "drive_get",
+          description: "Download/get a file from Google Drive. Supports images (JPEG, PNG, etc.), text files, and binary files.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              fileId: {
+                type: "string",
+                description: "ID of the file to download",
+              },
+            },
+            required: ["fileId"],
+          },
+        },
         // Calendar tools
         {
           name: "calendar_create_event",
@@ -279,6 +293,8 @@ class GoogleMCPServer {
             return await this.driveService.listFiles(auth, args);
           case "drive_delete":
             return await this.driveService.deleteFile(auth, args);
+          case "drive_get":
+            return await this.driveService.getFile(auth, args);
 
           // Calendar handlers
           case "calendar_create_event":

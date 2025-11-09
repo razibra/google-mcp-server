@@ -100,4 +100,81 @@ export class DriveService {
       throw new Error(`Failed to delete file: ${error}`);
     }
   }
+
+  async getFile(auth: OAuth2Client, params: any) {
+    const drive = google.drive({ version: "v3", auth });
+
+    try {
+      // First, get file metadata to determine MIME type
+      const metadata = await drive.files.get({
+        fileId: params.fileId,
+        fields: "id, name, mimeType, size",
+      });
+
+      const mimeType = metadata.data.mimeType || "application/octet-stream";
+      const fileName = metadata.data.name || "unknown";
+
+      // Download the file content
+      const response = await drive.files.get(
+        {
+          fileId: params.fileId,
+          alt: "media",
+        },
+        { responseType: "arraybuffer" }
+      );
+
+      // Convert to base64
+      const base64Data = Buffer.from(response.data as ArrayBuffer).toString(
+        "base64"
+      );
+
+      // Check if it's an image
+      if (mimeType.startsWith("image/")) {
+        return {
+          content: [
+            {
+              type: "image",
+              data: base64Data,
+              mimeType: mimeType,
+            },
+          ],
+        };
+      }
+
+      // For text files, decode and return as text
+      if (
+        mimeType.startsWith("text/") ||
+        mimeType === "application/json" ||
+        mimeType === "application/xml"
+      ) {
+        const textContent = Buffer.from(
+          response.data as ArrayBuffer
+        ).toString("utf-8");
+        return {
+          content: [
+            {
+              type: "text",
+              text: `File: ${fileName}\nMIME Type: ${mimeType}\n\n${textContent}`,
+            },
+          ],
+        };
+      }
+
+      // For other binary files, return base64 with resource type
+      return {
+        content: [
+          {
+            type: "resource",
+            resource: {
+              uri: `gdrive://${params.fileId}`,
+              mimeType: mimeType,
+              text: base64Data,
+            },
+          },
+        ],
+      };
+    } catch (error) {
+      throw new Error(`Failed to get file: ${error}`);
+    }
+  }
 }
