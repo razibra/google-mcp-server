@@ -19,6 +19,8 @@ import { AppsScriptService } from "./services/appsscript.js";
 import { YouTubeService } from "./services/youtube.js";
 import { StorageService } from "./services/storage.js";
 import { BigQueryService } from "./services/bigquery.js";
+import { performHealthCheck, formatHealthCheck } from "./utils/healthcheck.js";
+import { validateConfiguration, formatValidationResult } from "./utils/configValidator.js";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -42,6 +44,14 @@ class GoogleMCPServer {
   private bigQueryService: BigQueryService;
 
   constructor() {
+    // Validate configuration on startup
+    const configResult = validateConfiguration();
+    console.error("\n" + formatValidationResult(configResult));
+
+    if (!configResult.valid) {
+      console.error("⚠️  Server starting with configuration errors. Some features may not work.\n");
+    }
+
     this.server = new Server(
       {
         name: "google-mcp-server",
@@ -400,6 +410,11 @@ class GoogleMCPServer {
         {
           name: "auth_status",
           description: "Check authentication status",
+          inputSchema: { type: "object", properties: {} },
+        },
+        {
+          name: "health_check",
+          description: "Check health status of all Google services (authentication, APIs, configuration)",
           inputSchema: { type: "object", properties: {} },
         },
 
@@ -1085,6 +1100,16 @@ class GoogleMCPServer {
               content: [{
                 type: "text",
                 text: `Authentication status: ${(await this.authManager.isAuthenticated()) ? "Authenticated" : "Not authenticated"}`,
+              }],
+            };
+
+          // Health check
+          case "health_check":
+            const healthResult = await performHealthCheck(auth);
+            return {
+              content: [{
+                type: "text",
+                text: formatHealthCheck(healthResult),
               }],
             };
 

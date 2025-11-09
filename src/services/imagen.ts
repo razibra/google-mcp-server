@@ -7,6 +7,7 @@ import {
 } from "../types.js";
 import { validateRequired } from "../utils/validation.js";
 import { fetchWithRetry } from "../utils/retry.js";
+import { createEnhancedError, getErrorSuggestions, createConfigError } from "../utils/errors.js";
 import fs from "fs/promises";
 import path from "path";
 import os from "os";
@@ -58,7 +59,7 @@ export class ImagenService {
     validateRequired(params.prompt, 'prompt');
 
     if (!this.projectId) {
-      throw new GoogleAPIError("GOOGLE_CLOUD_PROJECT environment variable is required for Imagen API");
+      throw createConfigError("GOOGLE_CLOUD_PROJECT", "Imagen image generation");
     }
 
     try {
@@ -110,7 +111,16 @@ export class ImagenService {
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new GoogleAPIError(`Imagen API error: ${response.status} - ${errorText}`);
+        const suggestions = getErrorSuggestions(response.status, "Imagen 3");
+        throw createEnhancedError(
+          errorText || `HTTP ${response.status}`,
+          {
+            service: "Imagen 3",
+            operation: "Image generation",
+            statusCode: response.status,
+          },
+          suggestions
+        );
       }
 
       const result = await response.json();
@@ -190,7 +200,7 @@ export class ImagenService {
     validateRequired(params.baseImage, 'baseImage');
 
     if (!this.projectId) {
-      throw new GoogleAPIError("GOOGLE_CLOUD_PROJECT environment variable is required for Imagen API");
+      throw createConfigError("GOOGLE_CLOUD_PROJECT", "Imagen image editing");
     }
 
     try {
