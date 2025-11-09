@@ -6,6 +6,7 @@ import {
   GoogleAPIError
 } from "../types.js";
 import { validateRequired } from "../utils/validation.js";
+import { fetchWithRetry } from "../utils/retry.js";
 import fs from "fs/promises";
 import path from "path";
 import os from "os";
@@ -94,14 +95,17 @@ export class ImagenService {
         throw new GoogleAPIError("Failed to get access token");
       }
 
-      // Make request to Vertex AI
-      const response = await fetch(endpoint, {
+      // Make request to Vertex AI with automatic retry
+      const response = await fetchWithRetry(endpoint, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(requestBody),
+      }, {
+        maxAttempts: 3,
+        initialDelay: 1000,
       });
 
       if (!response.ok) {
@@ -224,13 +228,17 @@ export class ImagenService {
         throw new GoogleAPIError("Failed to get access token");
       }
 
-      const response = await fetch(endpoint, {
+      // Make request to Vertex AI with automatic retry
+      const response = await fetchWithRetry(endpoint, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(requestBody),
+      }, {
+        maxAttempts: 3,
+        initialDelay: 1000,
       });
 
       if (!response.ok) {

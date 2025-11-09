@@ -316,6 +316,8 @@ export interface VeoGenerateParams {
   duration?: number;           // Duration in seconds (default: 5)
   aspectRatio?: string;        // "16:9", "9:16", "1:1"
   model?: string;              // "veo-3.0" or specific model version
+  saveToFile?: boolean;        // Save generated videos to local disk (default: true)
+  outputPath?: string;         // Custom output directory (default: Videos/AI-Generated)
 }
 
 // ============================================================================

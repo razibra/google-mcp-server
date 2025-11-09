@@ -627,6 +627,14 @@ class GoogleMCPServer {
                 description: "Aspect ratio (default: 16:9)"
               },
               model: { type: "string", description: "Model version (default: veo-3.0)" },
+              saveToFile: {
+                type: "boolean",
+                description: "Save generated videos to local disk (default: true). Videos are saved to Videos/AI-Generated folder."
+              },
+              outputPath: {
+                type: "string",
+                description: "Custom output directory path for saving videos (optional)"
+              },
             },
             required: ["prompt"],
           },

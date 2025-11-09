@@ -4,6 +4,9 @@ import {
   GoogleAPIError
 } from "../types.js";
 import { validateRequired } from "../utils/validation.js";
+import fs from "fs/promises";
+import path from "path";
+import os from "os";
 
 export class VeoService {
   private projectId: string;
@@ -13,6 +16,35 @@ export class VeoService {
     this.projectId = process.env.GOOGLE_CLOUD_PROJECT || "";
     if (!this.projectId) {
       console.warn("GOOGLE_CLOUD_PROJECT not set. Veo features will require project ID.");
+    }
+  }
+
+  /**
+   * Save base64 video to file
+   */
+  private async saveVideoToFile(base64Data: string, outputPath?: string): Promise<string> {
+    try {
+      // Determine output directory
+      const homeDir = os.homedir();
+      const defaultDir = path.join(homeDir, "Videos", "AI-Generated");
+      const outputDir = outputPath || defaultDir;
+
+      // Create directory if it doesn't exist
+      await fs.mkdir(outputDir, { recursive: true });
+
+      // Generate filename with timestamp
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0] + '_' + Date.now();
+      const filename = `veo_${timestamp}.mp4`;
+      const filePath = path.join(outputDir, filename);
+
+      // Convert base64 to buffer and save
+      const videoBuffer = Buffer.from(base64Data, 'base64');
+      await fs.writeFile(filePath, videoBuffer);
+
+      return filePath;
+    } catch (error) {
+      console.error('Error saving video to file:', error);
+      throw new GoogleAPIError(`Failed to save video to file: ${error}`);
     }
   }
 
@@ -96,15 +128,31 @@ export class VeoService {
       const video = predictions[0];
       const videoData = video.bytesBase64Encoded || video.video?.bytesBase64Encoded;
 
+      // Save to file by default (unless explicitly disabled)
+      const shouldSaveToFile = params.saveToFile !== false; // Default to true
+      let savedFile: string | null = null;
+
+      if (shouldSaveToFile && videoData) {
+        try {
+          savedFile = await this.saveVideoToFile(videoData, params.outputPath);
+        } catch (error) {
+          console.error('Failed to save video:', error);
+        }
+      }
+
       let responseText = `✅ Generated video with Veo 3\n\n`;
       responseText += `Prompt: "${params.prompt}"\n`;
       responseText += `Model: ${model}\n`;
       responseText += `Duration: ${duration} seconds\n`;
       responseText += `Aspect Ratio: ${aspectRatio}\n\n`;
 
-      if (videoData) {
+      if (savedFile) {
+        responseText += `📁 Saved Video:\n`;
+        responseText += `  ${savedFile}\n\n`;
+        responseText += `✅ You can now open this video from your file explorer!`;
+      } else if (videoData) {
         responseText += `Video data: data:video/mp4;base64,${videoData.substring(0, 50)}...\n`;
-        responseText += `\n📝 Note: Video is returned as base64-encoded MP4. You can save it to a file.`;
+        responseText += `\n📝 Note: Video is returned as base64-encoded MP4. Set saveToFile: true to save automatically.`;
       } else if (video.videoUri) {
         responseText += `Video URL: ${video.videoUri}\n`;
         responseText += `\n📝 Note: Video is available at the provided URL.`;
