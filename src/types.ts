@@ -295,6 +295,8 @@ export interface ImagenGenerateParams {
   model?: string;              // "imagen-3.0-generate-001" or "imagen-3.0-fast-generate-001"
   safetyFilterLevel?: string;  // "block_most", "block_some", "block_few" (default: "block_some")
   personGeneration?: string;   // "allow_adult", "allow_all", "dont_allow" (default: "dont_allow")
+  saveToFile?: boolean;        // Save generated images to local disk (default: true)
+  outputPath?: string;         // Custom output directory (default: Pictures/AI-Generated)
 }
 
 export interface ImagenEditParams {

@@ -6,6 +6,9 @@ import {
   GoogleAPIError
 } from "../types.js";
 import { validateRequired } from "../utils/validation.js";
+import fs from "fs/promises";
+import path from "path";
+import os from "os";
 
 export class ImagenService {
   private projectId: string;
@@ -15,6 +18,35 @@ export class ImagenService {
     this.projectId = process.env.GOOGLE_CLOUD_PROJECT || "";
     if (!this.projectId) {
       console.warn("GOOGLE_CLOUD_PROJECT not set. Imagen features will require project ID.");
+    }
+  }
+
+  /**
+   * Save base64 image to file
+   */
+  private async saveImageToFile(base64Data: string, outputPath?: string): Promise<string> {
+    try {
+      // Determine output directory
+      const homeDir = os.homedir();
+      const defaultDir = path.join(homeDir, "Pictures", "AI-Generated");
+      const outputDir = outputPath || defaultDir;
+
+      // Create directory if it doesn't exist
+      await fs.mkdir(outputDir, { recursive: true });
+
+      // Generate filename with timestamp
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0] + '_' + Date.now();
+      const filename = `imagen_${timestamp}.png`;
+      const filePath = path.join(outputDir, filename);
+
+      // Convert base64 to buffer and save
+      const imageBuffer = Buffer.from(base64Data, 'base64');
+      await fs.writeFile(filePath, imageBuffer);
+
+      return filePath;
+    } catch (error) {
+      console.error('Error saving image to file:', error);
+      throw new GoogleAPIError(`Failed to save image to file: ${error}`);
     }
   }
 
@@ -95,17 +127,39 @@ export class ImagenService {
         };
       });
 
+      // Save to file by default (unless explicitly disabled)
+      const shouldSaveToFile = params.saveToFile !== false; // Default to true
+      const savedFiles: string[] = [];
+
+      if (shouldSaveToFile) {
+        for (const img of images) {
+          try {
+            const filePath = await this.saveImageToFile(img.data, params.outputPath);
+            savedFiles.push(filePath);
+          } catch (error) {
+            console.error('Failed to save image:', error);
+          }
+        }
+      }
+
       // Create text summary
       let responseText = `✅ Generated ${images.length} image(s) with Imagen 3\n\n`;
       responseText += `Prompt: "${params.prompt}"\n`;
       responseText += `Model: ${model}\n`;
       responseText += `Aspect Ratio: ${aspectRatio}\n\n`;
 
-      images.forEach((img: any, idx: number) => {
-        responseText += `Image ${idx + 1}: data:${img.mimeType};base64,${img.data.substring(0, 50)}...\n`;
-      });
-
-      responseText += `\n📝 Note: Images are returned as base64-encoded strings. You can save them or display them in compatible interfaces.`;
+      if (savedFiles.length > 0) {
+        responseText += `📁 Saved Images:\n`;
+        savedFiles.forEach((filePath, idx) => {
+          responseText += `  ${idx + 1}. ${filePath}\n`;
+        });
+        responseText += `\n✅ You can now open these images from your file explorer!`;
+      } else {
+        images.forEach((img: any, idx: number) => {
+          responseText += `Image ${idx + 1}: data:${img.mimeType};base64,${img.data.substring(0, 50)}...\n`;
+        });
+        responseText += `\n📝 Note: Images are returned as base64-encoded strings. Set saveToFile: true to save them automatically.`;
+      }
 
       return {
         content: [{

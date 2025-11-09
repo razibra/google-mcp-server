@@ -582,6 +582,14 @@ class GoogleMCPServer {
                 enum: ["allow_adult", "allow_all", "dont_allow"],
                 description: "Person generation policy (default: dont_allow)"
               },
+              saveToFile: {
+                type: "boolean",
+                description: "Save generated images to local disk (default: true). Images are saved to Pictures/AI-Generated folder."
+              },
+              outputPath: {
+                type: "string",
+                description: "Custom output directory path for saving images (optional)"
+              },
             },
             required: ["prompt"],
           },
